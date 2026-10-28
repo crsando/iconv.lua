@@ -36,11 +36,17 @@ make
 make LUA_INC=/usr/local/include/luajit-2.1
 ```
 
-使用 GNU libiconv 时，例如：
+macOS 不需要额外参数：`iconv(3)` 在 `libiconv.dylib` 里而不在 `libSystem`，Makefile 在
+Darwin 上会自动加上 `-liconv`。不链接的话模块能编出来，但 `require "iconv"` 时报
+`symbol not found in flat namespace '_iconv'`。
+
+明确使用 Homebrew 的 GNU libiconv（而不是系统那份）时：
 
 ```sh
-make ICONV_INC=/opt/homebrew/include ICONV_LIBS=-liconv
+make ICONV_INC=/opt/homebrew/include ICONV_LIBS="-L/opt/homebrew/lib -liconv"
 ```
+
+命令行给出的 `ICONV_LIBS` 会覆盖默认值（包括传空值 `ICONV_LIBS=` 关掉它）。
 
 Makefile 支持的常用变量：
 
@@ -53,7 +59,7 @@ Makefile 支持的常用变量：
 | `ICONV_INC` | 可选的 iconv 头文件目录 |
 | `ICONV_LIBS` | 可选的 iconv 链接参数，例如 `-liconv` |
 | `LUA_LIBS` | 必要时覆盖 Lua 链接参数 |
-| `PREFIX` | 安装前缀，默认 `/usr/local` |
+| `PREFIX` | 安装前缀，默认取 PATH 里 `luajit` 所在前缀（Homebrew 为 `/opt/homebrew`，找不到时 `/usr/local`） |
 
 ## 测试
 
@@ -75,7 +81,8 @@ make test LUA_BIN=lua5.1
 ## 安装
 
 ```sh
-make install PREFIX=/usr/local
+make install                 # 装到 luajit 所在前缀
+make install PREFIX=/usr/local  # 或显式指定
 ```
 
 模块会安装到 `$(PREFIX)/lib/lua/5.1/iconv.so`。如果使用自定义目录，设置 `LUA_CPATH` 或在 Lua 中调整 `package.cpath`：
